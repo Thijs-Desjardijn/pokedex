@@ -1,4 +1,4 @@
-#pokedex
+# pokedex
 
 This is a pokedex CLI that has all the basics such as catching logic, storing the Pokémon in a pokedex, reviewing the pokemons in your pokedex and a lot more.
 
@@ -27,5 +27,7 @@ git pull https://github.com/Thijs-Desjardijn/pokedex
 ## Usage
 
 To use a command simply type the command name after you see "Pokedex >".
+
+Casing and spaces do not matter, as they are handled by the program.
 
 You can view all the commands that are available using the "help" command. Some commands require an extra part of the command like an area or a Pokémon name.
