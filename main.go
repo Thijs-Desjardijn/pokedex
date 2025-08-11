@@ -576,7 +576,26 @@ func readSave() error {
 	gob.NewDecoder(file).Decode(&PokeDex)
 	return nil
 }
+
+func newAccount() error {
+	err := os.Mkdir("save_folder", 0755)
+	if err != nil {
+		return err
+	}
+	err = commandSave(&Config{}, "")
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func main() {
+	if _, err := os.Stat("./save_folder"); os.IsNotExist(err) {
+		fmt.Printf("Creating save_folder to safely store your progress\n")
+		err = newAccount()
+		if err != nil {
+			fmt.Printf("Error creating save folder: %v", err)
+		}
+	}
 	cfg := &Config{}
 	cache = pokecache.NewCache(120 * time.Second)
 	PokeDex = make(map[string]PokemonInformation)

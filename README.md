@@ -24,11 +24,6 @@ git init
 git pull https://github.com/Thijs-Desjardijn/pokedex
 ```
 
-Inside the root of the project run 
-```bash
-mkdir save_folder
-```
-this is to make a save folder where your progress stored.
 ## Usage
 
 To use a command simply type the command name after you see "Pokedex >".
