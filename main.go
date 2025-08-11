@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	//"go/format"
-
 	//"log"
 	"encoding/gob"
 	"io"
@@ -473,7 +472,7 @@ func commandCatch(_ *Config, pokemonName string) error {
 	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
 	const (
 		MaxBaseExp = 635.0 // highest known base experience (e.g. Blissey)
-		MinChance  = 100   // minimum capture chance %
+		MinChance  = 25    // minimum capture chance %
 		MaxChance  = 90    // maximum capture chance %
 	)
 
