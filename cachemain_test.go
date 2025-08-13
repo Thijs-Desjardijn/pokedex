@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Thijs-Desjardijn/pokedex/pokecache"
+	"github.com/Thijs-Desjardijn/pokedex/internal/pokecache"
 )
 
 func TestGetData_CacheHitAndMiss(t *testing.T) {

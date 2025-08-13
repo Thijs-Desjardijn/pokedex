@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/chzyer/readline"
+	"github.com/fatih/color"
+
 	//"go/format"
 	//"log"
 	"encoding/gob"
@@ -19,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Thijs-Desjardijn/pokedex/pokecache"
+	"github.com/Thijs-Desjardijn/pokedex/internal/pokecache"
 )
 
 type Config struct {
@@ -119,6 +122,21 @@ var PokeDex map[string]PokemonInformation
 var cache *pokecache.Cache
 var supportedCommands map[string]cliCommand
 
+var (
+	// Basic colors
+	blue   = color.New(color.FgBlue).SprintFunc()
+	orange = color.New(color.FgHiYellow).SprintFunc()
+	red    = color.New(color.FgRed).SprintFunc()
+	green  = color.New(color.FgGreen).SprintFunc()
+	yellow = color.New(color.FgYellow).SprintFunc()
+	cyan   = color.New(color.FgCyan).SprintFunc()
+
+	// Colors with bold styling
+	boldRed    = color.New(color.FgRed, color.Bold).SprintFunc()
+	boldGreen  = color.New(color.FgGreen, color.Bold).SprintFunc()
+	boldYellow = color.New(color.FgYellow, color.Bold).SprintFunc()
+)
+
 func simpelLearnMove(pokemon *PokemonInformation) ([]string, error) {
 	learnt_moves := []string{}
 	for len(learnt_moves) < 3 {
@@ -144,16 +162,16 @@ func simpelLearnMove(pokemon *PokemonInformation) ([]string, error) {
 
 func commandLearnMove(_ *Config, pokemonName string) error {
 	for i, move := range PokeDex[pokemonName].PokemonMovesAPIEntries {
-		fmt.Printf("%v: %v", i, move.MoveInfo.Name)
+		fmt.Printf("%v: %v, ", boldYellow(i), cyan(move.MoveInfo.Name))
 	}
-	fmt.Printf("What move do you want to learn for %s\nplease type the number befor the move:", pokemonName)
+	fmt.Printf("What move do you want to learn for %s\nplease type the number befor the move:", boldGreen(pokemonName))
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		if scanner.Scan() {
 			input := scanner.Text()
 			moveIndex, err := strconv.Atoi(input)
 			if err != nil {
-				fmt.Printf("\nWhat move do you want to learn for %s\nplease type the number befor the move:", pokemonName)
+				fmt.Printf("\nWhat move do you want to learn for %s\nplease type the number befor the move:", boldGreen(pokemonName))
 				continue
 			}
 			moveData, err := GetData(cache, PokeDex[pokemonName].PokemonMovesAPIEntries[moveIndex].MoveInfo.URL)
@@ -170,7 +188,7 @@ func commandLearnMove(_ *Config, pokemonName string) error {
 				continue
 			}
 			PokeDex[pokemonName].Moves[move.Name] = move
-			fmt.Printf("%s learnt move %s\n", pokemonName, move.Name)
+			fmt.Printf("%s learnt move %s\n", boldGreen(pokemonName), cyan(move.Name))
 		}
 		return nil
 	}
@@ -178,7 +196,7 @@ func commandLearnMove(_ *Config, pokemonName string) error {
 
 func playerMove(pokemon PokemonInformation, opponentPokemon *PokemonInformation) {
 	for move := range pokemon.Moves {
-		fmt.Printf("%s type: %s\n", pokemon.Moves[move].Name, pokemon.Moves[move].Type.Name)
+		fmt.Printf("%s type: %s\n", cyan(pokemon.Moves[move].Name), green(pokemon.Moves[move].Type.Name))
 	}
 	fmt.Printf("choose a move to play:")
 	scanner := bufio.NewScanner(os.Stdin)
@@ -188,12 +206,12 @@ func playerMove(pokemon PokemonInformation, opponentPokemon *PokemonInformation)
 			move, ok := pokemon.Moves[input]
 			if !ok {
 				for move := range pokemon.Moves {
-					fmt.Printf("%s type: %s", pokemon.Moves[move].Name, pokemon.Moves[move].Type.Name)
+					fmt.Printf("%s type: %s\n", cyan(pokemon.Moves[move].Name), green(pokemon.Moves[move].Type.Name))
 				}
 				fmt.Printf("\nchoose a move to play:")
 				continue
 			}
-			fmt.Printf("%s plays %s\n", pokemon.Name, move.Name)
+			fmt.Printf("%s plays %s\n", yellow(pokemon.Name), cyan(move.Name))
 			calculateDamageMove(pokemon, opponentPokemon, move)
 			break
 		}
@@ -239,7 +257,7 @@ func commandBattle(_ *Config, pokemonName string) error {
 			firstMove = false
 			index := rand.Intn(len(pokemon.Moves))
 			move := learnt_moves[index]
-			fmt.Printf("%s plays %s\n", pokemon.Name, pokemon.Moves[move].Name)
+			fmt.Printf("%s plays %s\n", yellow(pokemon.Name), cyan(pokemon.Moves[move].Name))
 			calculateDamageMove(pokemon, &your_pokemon, pokemon.Moves[move])
 			if your_pokemon.Hp <= 0 {
 				break
@@ -258,7 +276,7 @@ func commandBattle(_ *Config, pokemonName string) error {
 		} else {
 			index := rand.Intn(len(pokemon.Moves))
 			move := learnt_moves[index]
-			fmt.Printf("%s plays %s\n", pokemon.Name, pokemon.Moves[move].Name)
+			fmt.Printf("%s plays %s\n", yellow(pokemon.Name), cyan(pokemon.Moves[move].Name))
 			calculateDamageMove(pokemon, &your_pokemon, pokemon.Moves[move])
 			if your_pokemon.Hp <= 0 {
 				break
@@ -266,14 +284,14 @@ func commandBattle(_ *Config, pokemonName string) error {
 		}
 	}
 	if pokemon.Hp <= 0 {
-		fmt.Printf("%s fainted\n", pokemon.Name)
+		fmt.Printf("%s %s\n", yellow(pokemon.Name), boldRed("fainted"))
 		fmt.Printf("maxHp: %v\n", your_pokemon.MaxHp)
 		your_pokemon.Level += 1
-		your_pokemon.MaxHp = int(math.Round((float64(your_pokemon.MaxHp) * (1 + float64(your_pokemon.Level)*0.1))))
+		your_pokemon.MaxHp = int(math.Round((float64(your_pokemon.MaxHp) * 1.02)))
 		fmt.Printf("newMaxHp: %v\n", your_pokemon.MaxHp)
-		fmt.Println("You won!")
+		fmt.Println(boldGreen("You won!"))
 	} else {
-		fmt.Printf("%s fainted\n", your_pokemon.Name)
+		fmt.Printf("%s %s\n", yellow(your_pokemon.Name), boldRed("fainted"))
 	}
 	resetStats(&pokemon)
 	resetStats(&your_pokemon)
@@ -282,21 +300,21 @@ func commandBattle(_ *Config, pokemonName string) error {
 
 func calculateDamageMove(attackerPokemon PokemonInformation, pokemon *PokemonInformation, move Move) {
 	if rand.Intn(101) > move.Accuracy {
-		fmt.Printf("%s doged %s", pokemon.Name, move.Name)
+		fmt.Printf("%s %s %s!\n", pokemon.Name, yellow("dodged"), move.Name)
 		return
 	}
 	var damage int
 	if move.DamageClass.Name == "physical" {
-		damage = (((2*attackerPokemon.Level/5+2)*move.Power*attackerPokemon.Attack/pokemon.Defense)/50 + 2)
+		damage = 5 * (((2*attackerPokemon.Level/5+2)*move.Power*attackerPokemon.Attack/pokemon.Defense)/50 + 2)
 	} else {
-		damage = (((2*attackerPokemon.Level/5+2)*move.Power*attackerPokemon.SpecialAttack/pokemon.SpecialDefense)/50 + 2)
+		damage = 5 * (((2*attackerPokemon.Level/5+2)*move.Power*attackerPokemon.SpecialAttack/pokemon.SpecialDefense)/50 + 2)
 	}
-	fmt.Printf("damage dealt: %d", damage)
+	fmt.Printf("%s dealt: %s\n", boldRed("Damage"), red(fmt.Sprintf("%d", damage)))
 	pokemon.Hp -= damage
 }
 
 func commandFind(_ *Config, area string) error {
-	fmt.Printf("Looking for pokemon at %s\n", area)
+	fmt.Printf("Looking for pokemon at %s\n", orange(area))
 	url := "https://pokeapi.co/api/v2/location-area/" + area + "/"
 	data, err := GetData(cache, url)
 	if err != nil {
@@ -321,13 +339,13 @@ func commandFind(_ *Config, area string) error {
 		return err
 	}
 	pokemon.Moves = make(map[string]Move)
-	fmt.Printf("You found a %s!\nYou are now able to catch it using the catch command\nor you can fight it using the battle command\n", pokemonName)
+	fmt.Printf("You found a %s!\nYou are now able to catch %s using the %s command\nor you can %s it using the %s command\n", yellow(pokemonName), blue("catch"), yellow(pokemonName), red("fight"), blue("battle"))
 	catchablePokemon[pokemonName] = pokemon
 	return nil
 }
 
 func commandPokedex(_ *Config, _ string) error {
-	fmt.Println("Your Pokedex:")
+	fmt.Println(orange("Your Pokedex:"))
 	for _, pokemon := range PokeDex {
 		fmt.Printf("- %s\n", pokemon.Name)
 	}
@@ -340,9 +358,9 @@ func commandInspect(_ *Config, pokemonName string) error {
 		return nil
 	}
 	fmt.Println("stats:")
-	fmt.Printf("name: %s\nheight: %d\nweight: %d\nhp: %d\nattack: %d\n", pokemon.Name, pokemon.Height, pokemon.Weight, pokemon.Hp, pokemon.Attack)
-	fmt.Printf("defense: %d\nlevel: %d\nspecial attack: %d\nspecial defense: %d\nspeed: %d\n", pokemon.Defense, pokemon.Level, pokemon.SpecialAttack, pokemon.SpecialDefense, pokemon.Speed)
-	fmt.Println("type:")
+	fmt.Printf("%s %s\n%s %d\n%s %d\n%s %d\n%s %d\n", blue("name:"), yellow(pokemon.Name), green("height:"), pokemon.Height, orange("weight:"), pokemon.Weight, boldGreen("hp:"), pokemon.Hp, boldRed("attack:"), pokemon.Attack)
+	fmt.Printf("%s %d\n%s %d\n%s %d\n%s %d\n%s %d\n", blue("defense:"), pokemon.Defense, boldYellow("level:"), pokemon.Level, boldRed("special attack:"), pokemon.SpecialAttack, blue("special defense:"), pokemon.SpecialDefense, green("speed:"), pokemon.Speed)
+	fmt.Println(boldYellow("type:"))
 	for _, t := range pokemon.Types {
 		fmt.Printf("- %v\n", t.Type.Name)
 	}
@@ -360,15 +378,15 @@ func commandExit(cfg *Config, _ string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Closing the Pokedex... Goodbye!")
+	fmt.Println(blue("Closing the Pokedex... Goodbye!"))
 	os.Exit(0)
 	return nil
 }
 
 func commandHelp(cfg *Config, _ string) error {
-	fmt.Printf("Welcome to the Pokedex!\nUsage:\n\n")
+	fmt.Printf("%s\nUsage:\n\n", green("Welcome to the Pokedex!"))
 	for _, command := range supportedCommands {
-		fmt.Printf("%s: %s\n", command.name, command.description)
+		fmt.Printf("%s: %s\n", blue(command.name), command.description)
 	}
 	return nil
 }
@@ -458,7 +476,7 @@ func commandExplore(_ *Config, nameLocation string) error {
 		return err
 	}
 	for _, pokemon := range area.PokemonEncounters {
-		fmt.Println(pokemon.Pokemon.Name)
+		fmt.Println(yellow(pokemon.Pokemon.Name))
 	}
 	return nil
 }
@@ -466,10 +484,10 @@ func commandExplore(_ *Config, nameLocation string) error {
 func commandCatch(_ *Config, pokemonName string) error {
 	pokemon, ok := catchablePokemon[pokemonName]
 	if !ok {
-		fmt.Printf("You have not yet found %s", pokemonName)
+		fmt.Printf("You have not yet found %s or the pokemon does not exist\n", yellow(pokemonName))
 		return nil
 	}
-	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
+	fmt.Printf("Throwing a Pokeball at %s...\n", yellow(pokemonName))
 	const (
 		MaxBaseExp = 635.0 // highest known base experience (e.g. Blissey)
 		MinChance  = 25    // minimum capture chance %
@@ -485,9 +503,9 @@ func commandCatch(_ *Config, pokemonName string) error {
 	}
 	catchSucces := rand.Intn(100) < chance
 	if catchSucces {
-		fmt.Printf("%s was caught!\n", pokemonName)
+		fmt.Printf("%s was caught!\n", yellow(pokemonName))
 	} else {
-		fmt.Printf("%s escaped!\n", pokemonName)
+		fmt.Printf("%s escaped!\n", yellow(pokemonName))
 		return nil
 	}
 	pokemon.Level = 1
@@ -532,7 +550,7 @@ func resetStats(pokemon *PokemonInformation) {
 }
 
 func commandSave(_ *Config, _ string) error {
-	fmt.Printf("Saving your progress\nDo not shut off the program\n")
+	fmt.Printf("%s your progress\nDo %s shut off the program\n", boldGreen("Saving"), boldRed("not"))
 	filename := "save_" + time.Now().Format("20060102_150405") + ".bin"
 	file, err := os.Create("save_folder/" + filename)
 	if err != nil {
@@ -544,7 +562,7 @@ func commandSave(_ *Config, _ string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Save sucessful")
+	fmt.Println(boldGreen("Save sucessful"))
 	return nil
 }
 
@@ -587,6 +605,7 @@ func newAccount() error {
 	}
 	return nil
 }
+
 func main() {
 	if _, err := os.Stat("./save_folder"); os.IsNotExist(err) {
 		fmt.Printf("Creating save_folder to safely store your progress\n")
@@ -676,33 +695,58 @@ func main() {
 			callback:    commandLearnMove,
 		},
 	}
-	scanner := bufio.NewScanner(os.Stdin)
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:            "Pokedex > ",
+		HistorySearchFold: true, // case-insensitive history search
+		InterruptPrompt:   "^C",
+		EOFPrompt:         "exit",
+	})
+	if err != nil {
+		fmt.Println("Error initializing readline:", err)
+		return
+	}
+	defer rl.Close()
 
-	// This blocks execution and waits for the user to input something and press Enter
 	for {
-		fmt.Print("Pokedex > ")
-		if scanner.Scan() {
-
-			input := scanner.Text()
-			cleanedInput := cleanInput(input)
-			if len(cleanedInput) < 1 {
-				fmt.Printf("\n")
-				fmt.Println("input needs to be atleast 1 character long")
-				continue
-			} // Get the input text
-			command := cleanedInput[0]
-			secondCommand := ""
-			if len(cleanedInput) > 1 {
-				secondCommand = cleanedInput[1]
-			}
-			if cmd, exists := supportedCommands[command]; exists {
-				err := cmd.callback(cfg, secondCommand)
-				if err != nil {
-					fmt.Println(err)
+		input, err := rl.Readline()
+		if err != nil {
+			if err == readline.ErrInterrupt {
+				// Handle Ctrl+C
+				if len(input) == 0 {
+					break
 				}
-			} else {
-				fmt.Println("Unknown command")
+				continue
+			} else if err == io.EOF {
+				// Handle Ctrl+D
+				break
 			}
+			fmt.Println("Error reading input:", err)
+			continue
+		}
+
+		// Add to history
+		if strings.TrimSpace(input) != "" {
+			rl.SaveHistory(input) // works in v1.5.1
+		}
+
+		cleanedInput := cleanInput(input)
+		if len(cleanedInput) < 1 {
+			fmt.Println("Input needs to be at least 1 character long")
+			continue
+		}
+
+		command := cleanedInput[0]
+		secondCommand := ""
+		if len(cleanedInput) > 1 {
+			secondCommand = cleanedInput[1]
+		}
+
+		if cmd, exists := supportedCommands[command]; exists {
+			if err := cmd.callback(cfg, secondCommand); err != nil {
+				fmt.Println(err)
+			}
+		} else {
+			fmt.Println("Unknown command")
 		}
 	}
 }
